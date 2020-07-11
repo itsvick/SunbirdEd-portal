@@ -1,14 +1,16 @@
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { ResourceService } from '@sunbird/shared';
-import { Component, Input, EventEmitter, ViewChild, Output, OnDestroy, OnInit } from '@angular/core';
 import * as _ from 'lodash-es';
 import { IGroupMember } from '../../interfaces';
-
+import { GroupsService } from '../../services/groups/groups.service';
 
 export interface IMemberActionData {
   title: string;
   description: string;
   buttonText: string;
   theme?: 'primary' | 'error';
+  eid: string;
 }
 
 @Component({
@@ -25,7 +27,7 @@ export class MemberActionsComponent implements OnDestroy, OnInit {
   @Output() actionConfirm = new EventEmitter<any>();
 
   memberActionData: IMemberActionData;
-  constructor(public resourceService: ResourceService) {
+  constructor(public resourceService: ResourceService, private groupService: GroupsService, private activatedRoute: ActivatedRoute) {
   }
 
   ngOnInit() {
@@ -35,7 +37,8 @@ export class MemberActionsComponent implements OnDestroy, OnInit {
           title: `${this.resourceService.frmelmnts.btn.makeAdmin}?`,
           description: _.replace(this.resourceService.frmelmnts.lbl.makeAdmin, '{memberName}', this.member.title),
           buttonText: this.resourceService.frmelmnts.btn.makeAdmin,
-          theme: 'primary'
+          theme: 'primary',
+          eid: 'promote-as-admin-popup'
         };
         break;
       case 'removeFromGroup':
@@ -43,7 +46,8 @@ export class MemberActionsComponent implements OnDestroy, OnInit {
           title: `${this.resourceService.frmelmnts.btn.removeMember}?`,
           description: _.replace(this.resourceService.frmelmnts.lbl.removeWarning, '{memberName}', this.member.title),
           buttonText: this.resourceService.frmelmnts.btn.removeMember,
-          theme: 'error'
+          theme: 'error',
+          eid: 'remove-from-group-popup'
         };
         break;
       case 'dismissAsAdmin':
@@ -51,7 +55,8 @@ export class MemberActionsComponent implements OnDestroy, OnInit {
           title: `${this.resourceService.frmelmnts.btn.dismissAdmin}?`,
           description: _.replace(this.resourceService.frmelmnts.lbl.dismissWarning, '{memberName}', this.member.title),
           buttonText: this.resourceService.frmelmnts.btn.dismissAdmin,
-          theme: 'primary'
+          theme: 'primary',
+          eid: 'dismiss-as-admin-popup'
         };
         break;
       case 'leaveFromGroup':
@@ -59,7 +64,8 @@ export class MemberActionsComponent implements OnDestroy, OnInit {
           title: `${this.resourceService.frmelmnts.lbl.leaveGroup}?`,
           description: _.replace(this.resourceService.frmelmnts.lbl.leaveGroupWarning, '{groupName}', this.groupName),
           buttonText: this.resourceService.frmelmnts.lbl.leaveGroup,
-          theme: 'error'
+          theme: 'error',
+          eid: 'leave-from-group-popup'
         };
         break;
     }
@@ -68,11 +74,17 @@ export class MemberActionsComponent implements OnDestroy, OnInit {
   closeModal() {
     this.modal.deny();
     this.modalClose.emit();
+    this.addTelemetry(`close-${this.memberActionData.eid}`);
   }
 
   performAction() {
     this.actionConfirm.emit({ data: this.member, action: this.action });
-    this.closeModal();
+    this.modal.deny();
+    this.addTelemetry(`confirm-${this.memberActionData.eid}`);
+  }
+
+  addTelemetry(id) {
+    this.groupService.addTelemetry(id, this.activatedRoute.snapshot);
   }
 
   ngOnDestroy() {

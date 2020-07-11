@@ -8,6 +8,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { IPagination } from '../../../../shared/interfaces/index';
 import { CacheService } from 'ng2-cache-service';
 import { GroupsService } from '../../../services/groups/groups.service';
+import { IImpressionEventInput } from '@sunbird/telemetry';
 
 @Component({
   selector: 'app-activity-search',
@@ -34,6 +35,7 @@ export class ActivitySearchComponent implements OnInit {
   paginationDetails: IPagination;
   noResultMessage: any;
   groupData;
+  telemetryImpression: IImpressionEventInput;
   public slugForProminentFilter = (<HTMLInputElement>document.getElementById('slugForProminentFilter')) ?
     (<HTMLInputElement>document.getElementById('slugForProminentFilter')).value : null;
   orgDetailsFromSlug = this.cacheService.get('orgDetailsFromSlug');
@@ -56,6 +58,7 @@ export class ActivitySearchComponent implements OnInit {
   ngOnInit() {
     this.filterType = this.configService.appConfig.courses.filterType;
     this.groupData = this.groupsService.groupData;
+    this.telemetryImpression = this.groupsService.getImpressionObject(this.activatedRoute.snapshot, this.router.url);
     this.paginationDetails = this.paginationService.getPager(0, 1, this.configService.appConfig.SEARCH.PAGE_LIMIT);
     this.getFrameworkId();
     this.getFrameWork().pipe(first()).subscribe(framework => {
@@ -122,6 +125,7 @@ export class ActivitySearchComponent implements OnInit {
 
   search() {
     if (this.searchQuery.trim().length) {
+      this.addTelemetry('add-course-activity-search', { query: this.searchQuery });
       this.router.navigate([], { queryParams: { key: this.searchQuery } });
     } else {
       this.router.navigate([]);
@@ -202,11 +206,15 @@ export class ActivitySearchComponent implements OnInit {
 
   toggleFilter() {
     this.showFilters = !this.showFilters;
-    // TOTO add interact telemetry here
+    this.addTelemetry('toggle-filter-by');
   }
 
   addActivity(event) {
     this.router.navigate(['/learn/course', _.get(event, 'data.identifier')], { queryParams: { groupId: _.get(this.groupData, 'id') } });
+  }
+
+  addTelemetry(id, extra?) {
+    this.groupsService.addTelemetry(id, this.activatedRoute.snapshot, extra);
   }
 
   private setNoResultMessage() {

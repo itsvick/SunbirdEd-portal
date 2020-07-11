@@ -42,6 +42,5 @@ export class ActivityFormComponent implements OnInit {
 
   next() {
     this.nextClick.emit({ activityType: this.selectedActivity.title });
-    // TODO: Handle telemetry here
   }
 }

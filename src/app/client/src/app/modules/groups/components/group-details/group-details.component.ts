@@ -7,6 +7,7 @@ import { takeUntil } from 'rxjs/operators';
 import { GroupsService } from '../../services';
 import { IGroupMemberConfig, IGroupCard, ADD_ACTIVITY_TO_GROUP, COURSES, IGroupMember  } from '../../interfaces';
 import { IImpressionEventInput } from '@sunbird/telemetry';
+import { NavigationHelperService } from '../../../shared/services/navigation-helper/navigation-helper.service';
 @Component({
   selector: 'app-group-details',
   templateUrl: './group-details.component.html',
@@ -36,6 +37,7 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
     private toasterService: ToasterService,
     private router: Router,
     public resourceService: ResourceService,
+    private navigationHelperService: NavigationHelperService
   ) {
     this.groupService = groupService;
   }
@@ -56,10 +58,16 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
       this.members = this.groupService.addFieldsToMember(this.groupData.members);
     }, err => {
       this.toasterService.error(this.resourceService.messages.emsg.m002);
+      this.navigationHelperService.goBack();
     });
   }
 
   toggleActivityModal(visibility = false) {
+    if (visibility) {
+      this.addTelemetry('add-activity-button');
+    } else {
+      this.addTelemetry('select-activity-popup-close');
+    }
     this.showModal = visibility;
   }
 
@@ -70,9 +78,13 @@ export class GroupDetailsComponent implements OnInit, OnDestroy {
   handleNextClick(event) {
     this.toggleActivityModal(false);
     this.addActivityModal.deny();
+    this.addTelemetry('select-activity-popup-submit');
     this.router.navigate([`${ADD_ACTIVITY_TO_GROUP}/${COURSES}`, 1], { relativeTo: this.activatedRoute });
   }
 
+  addTelemetry(id) {
+    this.groupService.addTelemetry(id, this.activatedRoute.snapshot);
+  }
 
   ngOnDestroy() {
     this.unsubscribe$.next();

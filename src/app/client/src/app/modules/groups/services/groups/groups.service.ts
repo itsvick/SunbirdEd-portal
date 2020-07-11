@@ -3,7 +3,7 @@ import { CsModule } from '@project-sunbird/client-services';
 import { CsGroupAddActivitiesRequest, CsGroupRemoveActivitiesRequest, CsGroupUpdateActivitiesRequest, CsGroupUpdateMembersRequest } from '@project-sunbird/client-services/services/group/interface';
 import { UserService } from '@sunbird/core';
 import { NavigationHelperService, ResourceService } from '@sunbird/shared';
-import { IImpressionEventInput, TelemetryService } from '@sunbird/telemetry';
+import { IImpressionEventInput, TelemetryService, IInteractEventInput } from '@sunbird/telemetry';
 import * as _ from 'lodash-es';
 import { IGroup, IGroupCard, IGroupMember, IGroupSearchRequest, IGroupUpdate, IMember } from '../../interfaces';
 import { CsLibInitializerService } from './../../../../service/CsLibInitializer/cs-lib-initializer.service';
@@ -114,9 +114,9 @@ export class GroupsService {
     this.membersList.emit(members);
   }
 
-  addTelemetry(eid: string, routeData) {
+  addTelemetry(eid: string, routeData, extra?) {
 
-    const interactData = {
+    const interactData: IInteractEventInput = {
       context: {
         env: _.get(routeData, 'data.telemetry.env'),
         cdata: []
@@ -128,10 +128,22 @@ export class GroupsService {
       }
     };
 
+    if (extra) {
+      interactData.edata.extra = extra;
+    }
+
     if (_.get(routeData, 'params.groupId')) {
-      interactData['object'] = {
+      interactData.object = {
         id: _.get(routeData, 'params.groupId'),
         type: 'Group',
+        ver: '1.0',
+      };
+    }
+
+    if (_.get(routeData, 'params.activityId')) {
+      interactData.object = {
+        id: _.get(routeData, 'params.activityId'),
+        type: 'activity',
         ver: '1.0',
       };
     }

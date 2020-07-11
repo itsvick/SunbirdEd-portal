@@ -75,6 +75,7 @@ export class GroupHeaderComponent implements OnInit, OnDestroy {
 
   leaveGroup() {
     // TODO: leave group API integration and add telemetry
+    this.addTelemetry('leave-group');
   }
 
   ngOnDestroy() {

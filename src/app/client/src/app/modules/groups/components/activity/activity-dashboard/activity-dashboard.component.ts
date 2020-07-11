@@ -1,12 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ResourceService, ToasterService } from '@sunbird/shared';
+import { NavigationHelperService, ResourceService, ToasterService } from '@sunbird/shared';
+import * as _ from 'lodash-es';
 import { combineLatest, Subject } from 'rxjs';
 import { debounceTime, delay, map, takeUntil, tap } from 'rxjs/operators';
 import { IGroup } from '../../../interfaces/group';
 import { GroupsService } from '../../../services';
 import { IActivity } from '../activity-list/activity-list.component';
-import * as _ from 'lodash-es';
 
 @Component({
   selector: 'app-activity-dashboard',
@@ -30,10 +30,15 @@ export class ActivityDashboardComponent implements OnInit {
     public resourceService: ResourceService,
     private activatedRoute: ActivatedRoute,
     private groupService: GroupsService,
-    private toasterService: ToasterService
+    private toasterService: ToasterService,
+    private navigationHelperService: NavigationHelperService
   ) { }
 
   ngOnInit() {
+    /* istanbul ignore else */
+    if (_.get(this.groupService, 'groupData.memberRole') === 'admin') {
+      this.navigationHelperService.goBack();
+    }
     this.fetchActivityOnParamChange();
   }
 
@@ -108,10 +113,15 @@ export class ActivityDashboardComponent implements OnInit {
     });
   }
 
+  addTelemetry(id, extra?) {
+    this.groupService.addTelemetry(id, this.activatedRoute.snapshot, extra);
+  }
+
   search(searchKey: string) {
     if (searchKey.trim().length) {
       this.showSearchResults = true;
       this.memberListToShow = this.groupMembers.filter(item => _.toLower(item.title).includes(searchKey));
+      this.addTelemetry('group-activity-member-search', { query: searchKey });
     } else {
       this.showSearchResults = false;
       this.memberListToShow = _.cloneDeep(this.groupMembers);

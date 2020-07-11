@@ -5,7 +5,9 @@ import { fromEvent, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ConfigService } from '../../../../shared/services/config/config.service';
 import { ResourceService } from '../../../../shared/services/resource/resource.service';
+import { GroupsService } from '../../../services/groups/groups.service';
 import { ACTIVITY_DETAILS } from './../../../interfaces';
+import { IImpressionEventInput } from '@sunbird/telemetry';
 
 export interface IActivity {
   name: string;
@@ -30,17 +32,21 @@ export class ActivityListComponent {
   selectedActivity: IActivity;
   showModal = false;
   unsubscribe$ = new Subject<void>();
+  telemetryImpression: IImpressionEventInput;
 
   constructor(
     private configService: ConfigService,
     private router: Router,
     private activateRoute: ActivatedRoute,
     public resourceService: ResourceService,
+    private groupService: GroupsService,
+    private activatedRoute: ActivatedRoute
   ) { }
 
   ngOnInit() {
     this.showLoader = true;
     this.getActivities();
+    this.telemetryImpression = this.groupService.getImpressionObject(this.activatedRoute.snapshot, this.router.url);
 
     fromEvent(document, 'click')
       .pipe(takeUntil(this.unsubscribe$))
@@ -94,8 +100,7 @@ export class ActivityListComponent {
   }
 
   openActivity(event: any, activity: IActivity) {
-    // TODO add telemetry here
-
+    this.addTelemetry('activity-card');
     if (_.get(this.groupData, 'isAdmin')) {
       this.router.navigate([`${ACTIVITY_DETAILS}`, activity.identifier], { relativeTo: this.activateRoute });
     } else {
@@ -109,14 +114,18 @@ export class ActivityListComponent {
   }
 
   toggleModal(show = false) {
+    show ? this.addTelemetry('activity-kebab-menu-open') : this.addTelemetry('activity-kebab-menu-close');
     this.showModal = show;
   }
 
   removeActivity() {
+    this.addTelemetry('remove-activity-button');
     this.activityList = this.activityList.filter(item => item.identifier !== this.selectedActivity.identifier);
     this.toggleModal();
+  }
 
-    // TODO: add telemetry here
+  addTelemetry(id) {
+    this.groupService.addTelemetry(id, this.activatedRoute.snapshot);
   }
 
   ngOnDestroy() {

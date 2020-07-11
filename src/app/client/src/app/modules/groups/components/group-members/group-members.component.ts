@@ -45,7 +45,6 @@ export class GroupMembersComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-
     const groupData = this.groupsService.groupData;
     this.members = this.groupsService.addFieldsToMember(groupData.members);
     this.memberListToShow = this.members;
@@ -78,6 +77,7 @@ export class GroupMembersComponent implements OnInit, OnDestroy {
 
   getMenuData(event, member) {
     this.showKebabMenu = !this.showKebabMenu;
+    this.showKebabMenu ? this.addTelemetry('member-card-menu-show') : this.addTelemetry('member-card-menu-close');
     this.selectedMember = member;
     event.event.stopImmediatePropagation();
   }
@@ -86,6 +86,7 @@ export class GroupMembersComponent implements OnInit, OnDestroy {
     if (searchKey.trim().length) {
       this.showSearchResults = true;
       this.memberListToShow = this.members.filter(item => _.toLower(item.title).includes(searchKey));
+      this.addTelemetry('group-member-search-input', { query: searchKey });
     } else {
       this.showSearchResults = false;
       this.memberListToShow = _.cloneDeep(this.members);
@@ -99,15 +100,19 @@ export class GroupMembersComponent implements OnInit, OnDestroy {
 
   addMember() {
     this.router.navigate([`${MY_GROUPS}/${GROUP_DETAILS}`, this.groupId, ADD_MEMBER]);
+    this.addTelemetry('add-member-button');
   }
 
   onModalClose() {
     this.showModal = false;
-    // Handle Telemetry
   }
 
   onActionConfirm() {
     // Perform member action
+  }
+
+  addTelemetry(id, extra?) {
+    this.groupsService.addTelemetry(id, this.activatedRoute.snapshot, extra);
   }
 
   ngOnDestroy() {
