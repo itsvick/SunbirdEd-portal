@@ -8,7 +8,7 @@ import { ToasterService, ResourceService } from '@sunbird/shared';
 const OFFLINE_ARTIFACT_MIME_TYPES = ['application/epub', 'video/webm', 'video/mp4', 'application/pdf'];
 import { Subject } from 'rxjs';
 import { DeviceDetectorService } from 'ngx-device-detector';
-import { IInteractEventEdata } from '@sunbird/telemetry';
+import { IInteractEventEdata, TelemetryService } from '@sunbird/telemetry';
 import { UserService } from '../../../core/services';
 import { OnDestroy } from '@angular/core';
 import { takeUntil } from 'rxjs/operators';
@@ -63,7 +63,9 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnChanges, OnDest
 
   constructor(public configService: ConfigService, public router: Router, private toasterService: ToasterService,
     public resourceService: ResourceService, public navigationHelperService: NavigationHelperService,
-    private deviceDetectorService: DeviceDetectorService, private userService: UserService) {
+    private deviceDetectorService: DeviceDetectorService, private userService: UserService,
+    private telemetryService: TelemetryService
+    ) {
     this.buildNumber = (<HTMLInputElement>document.getElementById('buildNumber'))
       ? (<HTMLInputElement>document.getElementById('buildNumber')).value : '1.0';
     this.previewCdnUrl = (<HTMLInputElement>document.getElementById('previewCdnUrl'))
@@ -171,6 +173,7 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnChanges, OnDest
       const playerElement = this.contentIframe.nativeElement;
       playerElement.src = iFrameSrc;
       playerElement.onload = (event) => {
+
         try {
           this.adjustPlayerHeight();
           playerElement.contentWindow.initializePreview(this.playerConfig);
@@ -178,6 +181,10 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnChanges, OnDest
             playerElement.addEventListener('renderer:telemetry:event', telemetryEvent => this.generateContentReadEvent(telemetryEvent));
             window.frames['contentPlayer'].addEventListener('message', accessEvent => this.generateScoreSubmitEvent(accessEvent), false);
             this.playerLoaded = true;
+            // playerElement.contentWindow.onbeforeunload = (event) =>  {
+            //   this.telemetryService.syncEvents(false);
+            //   console.log('in onunload', event);
+            // };
           }
         } catch (err) {
           const prevUrls = this.navigationHelperService.history;
@@ -186,6 +193,15 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnChanges, OnDest
           }
         }
       };
+
+      // playerElement.addEventListener('onunload', () => {
+      //   console.log('playerElement11111', playerElement);
+      // }, true);
+      // console.log('playerElement', playerElement);
+      // playerElement.onclose = (event) => {
+      //   console.log('onclose', event);
+      // };
+
     }, 0);
   }
   /**
@@ -332,7 +348,11 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnChanges, OnDest
   }
 
   ngOnDestroy() {
+    console.log('before sync =======ondestroy-----------');
+    this.telemetryService.syncEvents(false);
+    console.log('ondestroy');
     if (_.get(this.contentIframe, 'nativeElement')) {
+      console.log('ondestroy-----------');
       this.contentIframe.nativeElement.remove();
     }
     this.unsubscribe.next();

@@ -62,17 +62,17 @@ export class AddActivityContentTypesComponent implements OnInit, AfterViewInit {
   }
 
   onCardClick(cardData: CsGroupSupportedActivitiesFormField) {
-    this.csGroupAddableBloc.updateState({
-      pageIds: [cardData.activityType.toLowerCase()],
-      groupId: _.get(this.groupService, 'groupData.id'),
-      params: {
-        searchQuery: cardData.searchQuery,
-        groupData: _.get(this.groupService, 'groupData'),
-        contentType: cardData.activityType
-      }
-    });
-    this.sendInteractData({id: `${cardData.activityType}-card`});
-    this.router.navigate([`${ADD_ACTIVITY_TO_GROUP}`, cardData.activityType , 1], { relativeTo: this.activatedRoute });
+    // this.csGroupAddableBloc.updateState({
+    //   pageIds: [cardData.activityType.toLowerCase()],
+    //   groupId: _.get(this.groupService, 'groupData.id'),
+    //   params: {
+    //     searchQuery: cardData.searchQuery,
+    //     groupData: _.get(this.groupService, 'groupData'),
+    //     contentType: cardData.activityType
+    //   }
+    // });
+    // this.sendInteractData({id: `${cardData.activityType}-card`});
+    // this.router.navigate([`${ADD_ACTIVITY_TO_GROUP}`, cardData.activityType , 1], { relativeTo: this.activatedRoute });
   }
 
   sendInteractData(interactData) {

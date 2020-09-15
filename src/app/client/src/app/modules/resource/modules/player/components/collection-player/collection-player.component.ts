@@ -447,7 +447,16 @@ export class CollectionPlayerComponent implements OnInit, OnDestroy, AfterViewIn
       }));
   }
   closeCollectionPlayer() {
-    this.navigationHelperService.navigateToPreviousUrl('/resources');
+    try {
+      window.frames['contentPlayer'].document.body.onunload({});
+    } catch {
+
+    } finally {
+      setTimeout(() => {
+          this.navigationHelperService.navigateToPreviousUrl('/resources');
+      }, 500);
+    }
+    // this.navigationHelperService.navigateToPreviousUrl('/resources');
   }
   closeContentPlayer() {
     this.selectedContent = {};

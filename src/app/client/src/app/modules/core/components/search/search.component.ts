@@ -192,7 +192,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   setDropdownSelectedOption (value) {
     if ( value === 'Users' ) {
-      if ( !this.userProfile.rootOrgAdmin ) {
+      if ( !_.get(this.userProfile, 'rootOrgAdmin') ) {
         this.selectedOption = 'All';
       } else {
         this.selectedOption = value;

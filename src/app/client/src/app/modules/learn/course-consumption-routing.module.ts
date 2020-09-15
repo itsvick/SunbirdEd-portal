@@ -4,12 +4,14 @@ import { Routes, RouterModule } from '@angular/router';
 import { AuthGuard } from '@sunbird/core';
 import { UnEnrollBatchComponent } from './components/batch/unenroll-batch/unenroll-batch.component';
 import { AssessmentPlayerComponent } from './components/course-consumption/assessment-player/assessment-player.component';
+import { CanDeactivateGuard } from './can-deactivate-guard.service';
 
 const telemetryEnv = 'Course';
 const objectType = 'Course';
 const routes: Routes = [
   {
     path: 'play/:collectionId', component: AssessmentPlayerComponent,
+    // canDeactivate: [CanDeactivateGuard],
     data: {
       telemetry: {
         env: telemetryEnv, pageid: 'course-player', type: 'view', object: { ver: '1.0', type: 'batch' }

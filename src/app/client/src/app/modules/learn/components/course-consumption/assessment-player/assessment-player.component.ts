@@ -1,6 +1,6 @@
 import { Location } from '@angular/common';
 import { TelemetryService, IAuditEventInput, IImpressionEventInput } from '@sunbird/telemetry';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router, NavigationExtras } from '@angular/router';
 import { TocCardType } from '@project-sunbird/common-consumption';
 import { UserService } from '@sunbird/core';
@@ -9,8 +9,8 @@ import { PublicPlayerService } from '@sunbird/public';
 import { ConfigService, ResourceService, ToasterService, NavigationHelperService,
    ContentUtilsServiceService, ITelemetryShare, LayoutService } from '@sunbird/shared';
 import * as _ from 'lodash-es';
-import { combineLatest, Observable, Subject } from 'rxjs';
-import { first, map, takeUntil } from 'rxjs/operators';
+import { combineLatest, Observable, Subject, of } from 'rxjs';
+import { first, map, takeUntil, delay } from 'rxjs/operators';
 import { CsContentProgressCalculator } from '@project-sunbird/client-services/services/content/utilities/content-progress-calculator';
 import * as TreeModel from 'tree-model';
 const ACCESSEVENT = 'renderer:question:submitscore';
@@ -76,7 +76,8 @@ export class AssessmentPlayerComponent implements OnInit, OnDestroy {
     private router: Router,
     private contentUtilsServiceService: ContentUtilsServiceService,
     private telemetryService: TelemetryService,
-    private layoutService: LayoutService
+    private layoutService: LayoutService,
+    private cdr: ChangeDetectorRef
   ) {
     this.playerOption = {
       showContentRating: true
@@ -137,7 +138,18 @@ export class AssessmentPlayerComponent implements OnInit, OnDestroy {
     if (!this.isCourseCompletionPopupShown) {
       paramas['showCourseCompleteMessage'] = true;
     }
-    this.router.navigate(['/learn/course', this.courseId, 'batch', this.batchId], {queryParams: paramas});
+
+    try {
+      window.frames['contentPlayer'].document.body.onunload({});
+    } catch {
+
+    } finally {
+      setTimeout(() => {
+        this.cdr.detectChanges();
+          this.router.navigate(['/learn/course', this.courseId, 'batch', this.batchId], {queryParams: paramas});
+      }, 500);
+    }
+    // this.router.navigate(['/learn/course', this.courseId, 'batch', this.batchId], {queryParams: paramas});
   }
 
   private subscribeToQueryParam() {
@@ -603,4 +615,12 @@ export class AssessmentPlayerComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  // canDeactivate() {
+  //   console.log('i am navigating away');
+  //   window.frames['contentPlayer'].document.body.onunload({});
+  //   this.telemetryService.syncEvents(false);
+  //   return of(true).pipe(delay(500));
+  // }
+
 }

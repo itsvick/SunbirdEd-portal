@@ -134,7 +134,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.router.events
       .pipe(
         filter(event => event instanceof NavigationEnd),
-        tap((event: NavigationEnd) => this._routeData$.next(event))
+        tap((event: NavigationEnd) => this._routeData$.next(event)),
+        tap((event: NavigationEnd) => this.telemetryService.syncEvents(false))
       ).subscribe(data => {
         this.hideHeaderNFooter = _.get(this.activatedRoute, 'snapshot.firstChild.firstChild.data.hideHeaderNFooter') ||
           _.get(this.activatedRoute, 'snapshot.firstChild.firstChild.firstChild.data.hideHeaderNFooter');
