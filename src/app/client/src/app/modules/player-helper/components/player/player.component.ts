@@ -405,17 +405,17 @@ export class PlayerComponent implements OnInit, AfterViewInit, OnChanges, OnDest
   ngOnDestroy() {
     const playerElement = _.get(this.contentIframe, 'nativeElement');
     if (playerElement) {
-      if (_.get(playerElement, 'contentWindow.telemetry_web.tList.length')) {
-        const request = {
-          url: this.configService.urlConFig.URLS.TELEMETRY.SYNC,
-          data: {
-            'id': 'api.sunbird.telemetry',
-            'ver': '3.0',
-            'events': playerElement.contentWindow.telemetry_web.tList.map(item => JSON.parse(item))
-          }
-        };
-        this.contentService.post(request).subscribe();
-      }
+      // if (_.get(playerElement, 'contentWindow.telemetry_web.tList.length')) {
+      //   const request = {
+      //     url: this.configService.urlConFig.URLS.TELEMETRY.SYNC,
+      //     data: {
+      //       'id': 'api.sunbird.telemetry',
+      //       'ver': '3.0',
+      //       'events': playerElement.contentWindow.telemetry_web.tList.map(item => JSON.parse(item))
+      //     }
+      //   };
+      //   this.contentService.post(request).subscribe();
+      // }
       playerElement.remove();
     }
     this.unsubscribe.next();

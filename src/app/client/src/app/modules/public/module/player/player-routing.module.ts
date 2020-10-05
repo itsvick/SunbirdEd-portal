@@ -1,9 +1,10 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 import { PublicCollectionPlayerComponent, PublicContentPlayerComponent } from './components';
+import { CanDeactivateGuard } from '../../../core/guard/can-deactivate-guard.service';
 const routes: Routes = [
     {
-        path: 'content/:contentId', component: PublicContentPlayerComponent, data: {
+        path: 'content/:contentId', component: PublicContentPlayerComponent, canDeactivate: [CanDeactivateGuard], data: {
             // routeReuse: {
             //     reuse: true,
             //     path: '/play/content'

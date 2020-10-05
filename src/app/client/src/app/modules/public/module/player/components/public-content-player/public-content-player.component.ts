@@ -4,22 +4,23 @@ import { Router } from '@angular/router';
 import { UserService } from '@sunbird/core';
 import { DeviceDetectorService } from 'ngx-device-detector';
 import * as _ from 'lodash-es';
-import { Subject, of, throwError, Subscription } from 'rxjs';
+import { Subject, of, throwError, Subscription, Observable } from 'rxjs';
 import {
   ConfigService, ResourceService, ToasterService, UtilService, ContentUtilsServiceService,
   WindowScrollService, NavigationHelperService, PlayerConfig, ContentData, ITelemetryShare, LayoutService
 } from '@sunbird/shared';
 import { PublicPlayerService } from '../../../../services';
 import { IImpressionEventInput, IInteractEventObject, IInteractEventEdata } from '@sunbird/telemetry';
-import { takeUntil, mergeMap } from 'rxjs/operators';
+import { takeUntil, mergeMap, delay } from 'rxjs/operators';
 import { PopupControlService } from '../../../../../../service/popup-control.service';
 import { PlatformLocation } from '@angular/common';
+import { DeactivationGuard } from '../../../../../core/guard/can-deactivate-guard.service';
 @Component({
   selector: 'app-public-content-player',
   templateUrl: './public-content-player.component.html',
   styleUrls: ['./public-content-player.component.scss']
 })
-export class PublicContentPlayerComponent implements OnInit, OnDestroy, AfterViewInit {
+export class PublicContentPlayerComponent implements OnInit, OnDestroy, AfterViewInit, DeactivationGuard {
   /**
 	 * telemetryImpression
 	*/
@@ -277,4 +278,13 @@ export class PublicContentPlayerComponent implements OnInit, OnDestroy, AfterVie
     this.loadLandscapePlayer = false;
   }
 
+  canDeactivate(): boolean | Observable<boolean> | Promise<boolean> {
+    console.log('canDeactivate has fired in the component!');
+    try {
+      window.frames['contentPlayer'].document.body.onunload({});
+    } catch {
+    } finally {
+      return of(true).pipe(delay(1000));
+    }
+  }
 }
