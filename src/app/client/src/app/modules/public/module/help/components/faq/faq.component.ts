@@ -28,7 +28,7 @@ export class FaqComponent implements OnInit {
   unsubscribe$ = new Subject<void>();
   public telemetryImpression: IImpressionEventInput;
   defaultToEnglish = false;
-  isDesktopApp = false;
+  isDesktopApp = true;
 
   constructor(private http: HttpClient, private _cacheService: CacheService, private utilService: UtilService,
     public tenantService: TenantService, public resourceService: ResourceService, public activatedRoute: ActivatedRoute,

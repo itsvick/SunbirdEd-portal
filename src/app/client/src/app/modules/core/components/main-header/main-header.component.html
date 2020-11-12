@@ -377,7 +377,7 @@
           </li>
             <li class="list-item p-0" (click)="toggleSideMenu(false)" appTelemetryInteract
               [telemetryInteractEdata]="signInIntractEdata">
-              <a appOnlineOnly href={{hrefPath}} class="d-flex flex-ai-center list-item-a">
+              <a appOnlineOnly showWarningMessage="false"  href={{hrefPath}} class="d-flex flex-ai-center list-item-a">
                 <i class="icon-svg icon-svg--sm icon-login mr-8"><svg class="icon icon-svg--primary">
                     <use xlink:href="./assets/images/sprite.svg#login"></use>
                   </svg></i>
