@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Observable, fromEvent, Subject } from 'rxjs';
 import * as _ from 'lodash-es';
+import { delay, takeLast, debounceTime } from 'rxjs/operators';
+import { ToasterService, ResourceService } from '@sunbird/shared';
  @Injectable({
   providedIn: 'root'
 })
@@ -8,7 +10,7 @@ export class ConnectionService {
 
   private connectionMonitor: Observable<boolean>;
 
-   constructor() {
+  constructor(private toastService: ToasterService, private resourceService: ResourceService) {
      this.connectionMonitor = new Observable((observer) => {
       observer.next(navigator.onLine);
       window.addEventListener('offline', (e) => {
@@ -17,6 +19,11 @@ export class ConnectionService {
       window.addEventListener('online', (e) => {
         observer.next(true);
       });
+    });
+
+    this.connectionMonitor.pipe(debounceTime(5000)).subscribe((status: boolean) => {
+      const message = status ? _.get(this.resourceService, 'messages.stmsg.desktop.onlineStatus') : _.get(this.resourceService, 'messages.emsg.desktop.offlineStatus');
+      this.toastService.info(message);
     });
    }
 
