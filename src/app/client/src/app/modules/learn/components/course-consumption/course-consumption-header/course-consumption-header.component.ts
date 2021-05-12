@@ -397,7 +397,7 @@ export class CourseConsumptionHeaderComponent implements OnInit, AfterViewInit, 
       const navigateUrl = this.userService.loggedIn ? '/resources/play/collection' : '/play/collection';
       this.router.navigate([navigateUrl, this.tocId], { queryParams: { textbook: this.tocId } });
     } else if (!previousPageUrl) {
-      this.router.navigate(['/learn']);
+      this.router.navigate(['/resources'], { queryParams: { selectedTab: 'course' } });
       return;
     }
     if (previousPageUrl.url.indexOf('/my-groups/') >= 0) {
@@ -494,13 +494,13 @@ export class CourseConsumptionHeaderComponent implements OnInit, AfterViewInit, 
     this.logTelemetry('delete-collection');
     const request = {request: {contents: [collectionData.identifier]}};
     this.contentManagerService.deleteContent(request).pipe(takeUntil(this.unsubscribe)).subscribe(data => {
-      this.toasterService.success(this.resourceService.messages.stmsg.desktop.deleteTextbookSuccessMessage);
+      this.toasterService.success(this.resourceService.messages.stmsg.desktop.deleteCourseSuccessMessage);
       collectionData['downloadStatus'] = 'DOWNLOAD';
       collectionData['desktopAppMetadata.isAvailable'] = false;
       this.goBack();
     }, err => {
       this.disableDelete = false;
-      this.toasterService.error(this.resourceService.messages.etmsg.desktop.deleteTextbookErrorMessage);
+      this.toasterService.error(this.resourceService.messages.etmsg.desktop.deleteCourseErrorMessage);
     });
   }
    /**
