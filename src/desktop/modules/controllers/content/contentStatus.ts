@@ -1,4 +1,3 @@
-import { logger } from "@project-sunbird/logger";
 import { containerAPI } from "@project-sunbird/OpenRAP/api";
 import { NetworkQueue } from "@project-sunbird/OpenRAP/services/queue";
 import * as _ from 'lodash';
@@ -64,25 +63,29 @@ export default class ContentStatus {
     return new Promise(async(resolve, reject) => {
       try {
         const userId = await this.getCurrentUserId();
-        contentStatusList.forEach(async (element) => {
-          const resp = await this.findContentStatus(
-            element.contentId,
-            element.batchId,
-            element.courseId,
-            userId
-          );
+        if (_.get(contentStatusList, 'length')) {
+          contentStatusList.forEach(async (element) => {
+            const resp = await this.findContentStatus(
+              element.contentId,
+              element.batchId,
+              element.courseId,
+              userId
+            );
 
-          if (_.get(resp, 'docs.length')) { // upsert if found
-            const content = resp.docs[0];
-            if (element.status >= content.status) {
-              await this.databaseSdk.upsert(DB_NAME, resp.docs[0]._id, element);
+            if (_.get(resp, 'docs.length')) { // upsert if found
+              const content = resp.docs[0];
+              if (element.status >= content.status) {
+                await this.databaseSdk.upsert(DB_NAME, resp.docs[0]._id, element);
+              }
+            } else { // insert if not found
+              element.userId = userId;
+              await this.databaseSdk.insert(DB_NAME, element);
             }
-          } else { // insert if not found
-            element.userId = userId;
-            await this.databaseSdk.insert(DB_NAME, element);
-          }
+            resolve({});
+          });
+        } else {
           resolve({});
-        });
+        }
       } catch (error) {
         standardLog.error({ id: 'CONTENT_STATUS_DB_INSERT_FAILED', message: 'Error while inserting content status in database', error });
         resolve({});
@@ -93,9 +96,9 @@ export default class ContentStatus {
   async update(req, res) {
     const standardLog = containerAPI.getStandardLoggerInstance();
     this.deviceId = this.deviceId || await containerAPI.getSystemSDKInstance(manifest.id).getDeviceId();
-    const userToken: any = await userSDK.getUserToken().catch(error => { logger.debug("Unable to get the user token", error); });
-    const loggedInUserSession: any = await userSDK.getUserSession().catch(error => { logger.debug("User not logged in", error); });
-    const currentUser: any = await userSDK.getLoggedInUser(loggedInUserSession.userId, true).catch(error => { logger.debug("Unable to get the user token", error); });
+    const userToken: any = await userSDK.getUserToken().catch(error => { standardLog.debug({ id: 'CONTENT_STATUS_GET_USER_TOKEN_FAILED', message: 'Unable to get the user token', error }); });
+    const loggedInUserSession: any = await userSDK.getUserSession().catch(error => { standardLog.debug({ id: 'CONTENT_STATUS_USER_NOT_LOGGED_IN', message: 'User not logged in', error }); });
+    const currentUser: any = await userSDK.getLoggedInUser(loggedInUserSession.userId, true).catch(error => { standardLog.debug({ id: 'CONTENT_STATUS_GET_USER_TOKEN_FAILED', message: 'Unable to get the user token', error }); });
 
     let headers = {
       "Content-Type": "application/json",
@@ -118,7 +121,7 @@ export default class ContentStatus {
     };
 
     this.networkQueue.add(request).then(async (data) => {
-      logger.info("Added in queue");
+      standardLog.info({ id: 'CONTENT_STATUS_INSERTED_IN_QUEUE', message: 'Added in queue' });
       const contents = _.get(req, 'body.request.contents');
       const contentIds = _.map(contents, item => item.contentId);
       const result = contentIds.reduce((o, key) => ({ ...o, [key]: 'SUCCESS' }), {});

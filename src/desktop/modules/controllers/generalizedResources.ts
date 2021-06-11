@@ -53,19 +53,17 @@ export class GeneralizedResources {
     if (generalizedResources) {
       res.send(Response.success("api.report", { result: generalizedResources }, req));
     } else {
-      logger.error(`Generalized Resources not found for language: `, language, `for ReqId: ${req.get("x-msgid")} `);
+      this.standardLog.error({ id: 'GENERALIZED_RESOURCE_LANG_NOT_FOUND', message: `Generalized Resources not found for language: ${language}`, mid: req.get("x-msgid"), error: 'Resource not found!' });
       res.status(404).send(Response.error("api.report", 404));
     }
   }
 
   public async fetchOffline(language, req): Promise<any> {
     const docId = `generalized_${language}`;
-    let resources: any = await this.databaseSdk.get(GEN_RESOURCE_DB, docId).then((doc) => doc.data).catch((err) => {
+    return this.databaseSdk.get(GEN_RESOURCE_DB, docId).then((doc) => doc.data).catch((err) => {
       this.standardLog.error({ id: 'GENERALIZED_RESOURCE_DB_READ_FAILED', message: `Error while reading Generalized resources from DB for language: ${language}`, mid: req.get("x-msgid"), error: err });
       return undefined;
     });
-
-    return resources;
   }
 
   public async fetchOnline(language, req): Promise<any> {
@@ -74,7 +72,7 @@ export class GeneralizedResources {
         "content-type": "application/json",
       },
     };
-    return await HTTPService.get(`${process.env.APP_BASE_URL}/getGeneralisedResourcesBundles/${language}/all_labels_${language}.json`, config).toPromise()
+    return HTTPService.get(`${process.env.APP_BASE_URL}/getGeneralisedResourcesBundles/${language}/all_labels_${language}.json`, config).toPromise()
       .then((data: any) => {
         const resources = _.get(data, "data.result");
         if (resources) {
@@ -83,7 +81,7 @@ export class GeneralizedResources {
         return resources;
       }).catch((err) => {
         const traceId = _.get(err, 'data.params.msgid');
-        logger.error(`Got error while reading generalized resources from blob for language ${language}, for ReqId: ${req.get("x-msgid")}, error message ${err.message}, with trace Id ${traceId}`);
+        this.standardLog.error({ id: 'GENERALIZED_RESOURCE_BLOB_READ_FAILED', message: `Got error while reading generalized resources from blob, for language: ${language}, with trace Id ${traceId}`, mid: req.get("x-msgid"), error: err });
         return undefined;
       });
   }

@@ -2,16 +2,8 @@ import { logger } from "@project-sunbird/logger";
 import * as _ from "lodash";
 import { containerAPI } from "@project-sunbird/OpenRAP/api";
 import Response from "../utils/response";
-
-import { ClassLogger } from "@project-sunbird/logger/decorator";
 import { StandardLogger } from '@project-sunbird/OpenRAP/services/standardLogger';
 import { Inject } from 'typescript-ioc';
-
-/*@ClassLogger({
-  logLevel: "debug",
-  logTime: true,
-
-})*/
 export default class User {
     private userSDK;
     private settingSDK;
@@ -45,12 +37,13 @@ export default class User {
     public async read(req, res) {
         try {
             const userData = await this.userSDK.read();
-            const locationData = await this.settingSDK.get("location").catch((error) => { logger.error("Error while getting location data from setting SDK", error); });
+            const locationData = await this.settingSDK.get("location").catch((error) => { 
+                this.standardLog.error({ id: 'USER_DB_READ_FAILED', message: 'Received error while fetching location', error });
+            });
             userData.location = locationData;
             logger.info(`ReqId = "${req.headers["X-msgid"]}": result: ${userData} found from desktop app update api`);
             return res.send(Response.success("api.desktop.user.read", userData, req));
         } catch (err) {
-            logger.error(`ReqId = "${req.headers["X-msgid"]}": Received error while getting user,  where err = ${err}`);
             this.standardLog.error({ id: 'USER_DB_READ_FAILED', mid: req.headers["X-msgid"], message: 'Received error while getting user', error: err });
             res.status(err.status || 500);
             return res.send(

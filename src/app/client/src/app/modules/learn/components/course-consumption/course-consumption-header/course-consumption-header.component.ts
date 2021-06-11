@@ -356,35 +356,25 @@ export class CourseConsumptionHeaderComponent implements OnInit, AfterViewInit, 
     this.telemetryService.interact(interactData);
   }
   generateDataForDF() {
-        // const isCreator = this.userService.userid === _.get(this.courseHierarchy, 'createdBy');
-        // const isMentor = this.permissionService.checkRolesPermissions(['COURSE_MENTOR']);
-        this.fetchForumIdReq = {
-              type: 'course',
-              identifier: [this.courseId]
-          };
-        if (this.enrolledCourse) {
-            this.fetchForumIdReq = {
-              type: 'batch',
-              identifier: [this.batchId]
-          };
-    // TODO: need to check with sudip for this repeating code
-        // if (isCreator) {
-        //   this.fetchForumIdReq = {
-        //     type: 'course',
-        //     identifier: [this.courseId]
-        // };
-        // } else if (this.enrolledCourse) {
-        //   this.fetchForumIdReq = {
-        //     type: 'batch',
-        //     identifier: [this.batchId]
-        // };
-        // } else if (isMentor) {
-        //   // TODO: make getBatches() api call;
-        //   this.fetchForumIdReq = {
-        //     type: 'course',
-        //     identifier: [this.courseId]
-        // };
-      }
+    const isCreator = this.userService.userid === _.get(this.courseHierarchy, 'createdBy');
+    const isMentor = this.permissionService.checkRolesPermissions(['COURSE_MENTOR']);
+    if (isCreator) {
+      this.fetchForumIdReq = {
+        type: 'course',
+        identifier: [this.courseId]
+      };
+    } else if (this.enrolledCourse) {
+      this.fetchForumIdReq = {
+        type: 'batch',
+        identifier: [this.batchId]
+      };
+    } else if (isMentor) {
+      // TODO: make getBatches() api call;
+      this.fetchForumIdReq = {
+        type: 'course',
+        identifier: [this.courseId]
+      };
+    }
   }
   async goBack() {
     const previousPageUrl: any = this.courseConsumptionService.getCoursePagePreviousUrl;
@@ -494,13 +484,13 @@ export class CourseConsumptionHeaderComponent implements OnInit, AfterViewInit, 
     this.logTelemetry('delete-collection');
     const request = {request: {contents: [collectionData.identifier]}};
     this.contentManagerService.deleteContent(request).pipe(takeUntil(this.unsubscribe)).subscribe(data => {
-      this.toasterService.success(this.resourceService.messages.stmsg.desktop.deleteTextbookSuccessMessage);
+      this.toasterService.success(this.resourceService.messages.stmsg.desktop.deleteCourseSuccessMessage);
       collectionData['downloadStatus'] = 'DOWNLOAD';
       collectionData['desktopAppMetadata.isAvailable'] = false;
       this.goBack();
     }, err => {
       this.disableDelete = false;
-      this.toasterService.error(this.resourceService.messages.etmsg.desktop.deleteTextbookErrorMessage);
+      this.toasterService.error(this.resourceService.messages.etmsg.desktop.deleteCourseErrorMessage);
     });
   }
    /**

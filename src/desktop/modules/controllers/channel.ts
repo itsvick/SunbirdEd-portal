@@ -5,14 +5,7 @@ import * as path from "path";
 import { Inject } from "typescript-ioc";
 import DatabaseSDK from "../sdk/database/index";
 import Response from "../utils/response";
-
-import { ClassLogger } from "@project-sunbird/logger/decorator";
 import { StandardLogger } from '@project-sunbird/OpenRAP/services/standardLogger';
-
-// @ClassLogger({
-//   logLevel: "debug",
-//   logTime: true,
-// })
 export class Channel {
   @Inject
   private databaseSdk: DatabaseSDK;
@@ -76,9 +69,7 @@ export class Channel {
         return res.send(Response.success("api.channel.read", resObj, req));
       })
       .catch((err) => {
-        logger.error(
-          `ReqId = "${req.headers["X-msgid"]}": Received error while getting the data from channel database with id: ${id} and err.message: ${err.message} ${err}`,
-        );
+        this.standardLog.error({ id: 'CHANNEL_DB_READ_FAILED', message: `Received error while getting the data from channel database with id: ${id}`, error: err });
         if (err.status === 404) {
           res.status(404);
           return res.send(Response.error("api.channel.read", 404));

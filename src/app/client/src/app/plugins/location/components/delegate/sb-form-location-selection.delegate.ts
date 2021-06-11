@@ -203,13 +203,15 @@ export class SbFormLocationSelectionDelegate {
       const payload: any = {
         userId: _.get(this.userService, 'userid'),
         profileLocation: locationDetails,
-        ...(_.get(formValue, 'name') ? { firstName: _.get(formValue, 'name') } : {} ),
-        ...(_.get(formValue, 'persona') ? { userType: _.get(formValue, 'persona') } : {} ),
-        ...(_.get(formValue, 'children.persona.subPersona') ? { userSubType: _.get(formValue, 'children.persona.subPersona') } : {} ),
+        profileUserType: {
+          ...(_.get(formValue, 'persona') ? { type: _.get(formValue, 'persona') } : {} ),
+          ...(_.get(formValue, 'children.persona.subPersona') ? { subType: _.get(formValue, 'children.persona.subPersona') } : {} ),
+        },
+        ...(_.get(formValue, 'name') ? { firstName: _.get(formValue, 'name') } : {} )
       };
 
       const task = this.locationService.updateProfile(payload).toPromise()
-        .then(() => ({ userProfile: 'success' }))
+        .then(() => ({ userProfile: 'success',type: _.get(formValue, 'persona') }))
         .catch(() => ({ userProfile: 'fail' }));
       tasks.push(task);
     }
@@ -220,6 +222,7 @@ export class SbFormLocationSelectionDelegate {
 
       if (_.get(formValue, 'persona')) {
         localStorage.setItem('userType', formValue.persona);
+        localStorage.setItem('guestUserType', formValue.persona);
       }
       this.userService.updateGuestUser(user, formValue).subscribe();
     }
@@ -250,7 +253,9 @@ export class SbFormLocationSelectionDelegate {
     this.isLocationFormLoading = true;
     const tempLocationFormConfig: FieldConfig<any>[] = await this.formService.getFormConfig(formInputParams)
       .toPromise();
-    this.guestUserDetails = await this.userService.getGuestUser().toPromise();
+    if (!this.userService.loggedIn) {
+      this.guestUserDetails = await this.userService.getGuestUser().toPromise();
+    }
 
     for (const config of tempLocationFormConfig) {
       if (config.code === 'name') {
@@ -268,7 +273,7 @@ export class SbFormLocationSelectionDelegate {
       if (config.code === 'persona') {
         if (this.userService.loggedIn) {
           config.templateOptions.hidden = false;
-          config.default = (_.get(this.userService.userProfile, 'userType') || '').toLowerCase() || 'teacher';
+          config.default = (_.get(this.userService.userProfile.profileUserType, 'type') || '').toLowerCase() || 'teacher';
         } else {
           config.templateOptions.hidden = false;
           config.default = (localStorage.getItem('userType') || '').toLowerCase() || 'teacher';

@@ -9,11 +9,6 @@ import DatabaseSDK from "../sdk/database/index";
 import Response from "../utils/response";
 import { ILocation } from "./ILocation";
 import { StandardLogger } from '@project-sunbird/OpenRAP/services/standardLogger';
-
-/*@ClassLogger({
-  logLevel: "debug",
-  logTime: true,
-})*/
 export class Location {
     @Inject private databaseSdk: DatabaseSDK;
     @Inject private telemetryHelper: TelemetryHelper;
@@ -65,11 +60,7 @@ export class Location {
             return res.send(Response.error("api.location.search", 400, "location Type is missing"));
         }
         if (locationType === "district" && _.isEmpty(parentId)) {
-            logger.error(
-                `ReqId = '${req.headers[
-                "X-msgid"
-                ]}': Error Received while searching ${req.body} data error`,
-            );
+            this.standardLog.error({ id: 'LOCATION_SEARCH_FAILED', message: `Error Received while searching ${req.body} data error`, error: 'Parent ID unavailable', mid: req.headers["X-msgid"] });
             res.status(400);
             return res.send(Response.error("api.location.search", 400, "parentId is missing"));
         }
@@ -101,7 +92,7 @@ export class Location {
     }
     public async proxyToAPI(req, res, next) {
         const apiKey = await containerAPI.getDeviceSdkInstance().getToken().catch((err) => {
-            logger.error(`Received error while fetching api key in location search with error: ${err}`);
+            this.standardLog.error({ id: 'LOCATION_DEVICE_TOKEN_FETCH_FAILED', message: `Received error while fetching api key`, error: err });
         });
         const requestObj = {
             type: _.get(req.body, "request.filters.type"),
@@ -143,7 +134,7 @@ export class Location {
             return res.send(responseObj);
         } catch (err) {
             const traceId = _.get(err, 'data.params.msgid');
-            logger.error(`ReqId =  ${req.headers["X-msgid"]}: Error Received while getting data from Online ${err}, with trace Id= ${traceId}`);
+            this.standardLog.error({ id: 'LOCATION_ONLINE_SEARCH_FAILED', message: `Error Received while getting data from Online, with trace Id= ${traceId}`, error: err, mid: req.headers["X-msgid"] });
             next();
         }
     }

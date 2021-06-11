@@ -17,10 +17,6 @@ const DefaultRequestOptions = { headers: { "Content-Type": "application/json" } 
 
 const INTERVAL_TO_CHECKUPDATE = 1
 
-// @ClassLogger({
-//   logLevel: "debug",
-//   logTime: true
-// })
 export default class Content {
     private deviceId: string;
     private contentsFilesPath: string = 'content';
@@ -164,6 +160,8 @@ export default class Content {
                     failedCode: _.get(data, 'failedCode'),
                     failedReason: _.get(data, 'failedReason'),
                     addedUsing: _.toLower(_.get(data, 'type')),
+                    contentType: _.get(data, 'metaData.contentType'),
+                    trackable: _.get(data, 'metaData.trackable'),
                     contentDownloadList: _.map(_.get(data, 'metaData.contentDownloadList'),
                     (doc) => _.omit(doc, ["url"])),
 
@@ -185,7 +183,7 @@ export default class Content {
     search(req: any, res: any): any {
         logger.debug(`ReqId = "${req.headers['X-msgid']}": Called content search method`);
         let reqBody = req.body;
-        let pageReqFilter = _.get(reqBody, 'request.filters');
+        let pageReqFilter = this.getFilters(_.get(reqBody, 'request.filters'));
         let contentSearchFields = config.get('CONTENT_SEARCH_FIELDS').split(',');
         const mode = _.get(reqBody, 'request.mode');
         logger.info(`ReqId = "${req.headers['X-msgid']}": picked filters from the request`);
@@ -242,7 +240,6 @@ export default class Content {
                 return res.send(responseObj);
             })
             .catch(err => {
-                console.log(err);
                 this.standardLog.error({ id: 'CONTENT_SEARCH_FAILED', mid: req.headers['X-msgid'], message: 'Received error while searching content', error: err.message });
                 if (err.status === 404) {
                     res.status(404);
@@ -565,7 +562,8 @@ export default class Content {
                 });
                 resolve(facetData);
             } else {
-                    _.forEach(facets, (facet) => {
+                    const extendedFacets = [...facets, ...["board", "medium", "gradeLevel", "subject"]];
+                    _.forEach(extendedFacets, (facet) => {
                         let eachFacetData = _.map(contents, (content) => _.get(content, facet));
                         const arrayData = [];
                         _.forEach(eachFacetData, (data) => {
@@ -581,7 +579,27 @@ export default class Content {
                                 return ({ name: data[0], count: data.length});
                             }
                         });
-                        facetData.push({ name: facet, values: _.compact(result) || [] });
+
+                        if (facet === 'board' || facet === 'se_boards') {
+                            facet = 'se_boards'
+                        } else if (facet === 'gradeLevel' || facet === 'se_gradeLevels') {
+                            facet = 'se_gradeLevels';
+                        } else if (facet === 'medium' || facet === 'se_mediums') {
+                            facet = 'se_mediums';
+                        } else if (facet === 'subject' || facet === 'se_subjects') {
+                            facet = 'se_subjects';
+                        }
+
+                        const facetList = facetData.map(item => item.name);
+                        if (facetList.length && facetList.includes(facet)) {
+                            _.each(facetData, (facetItem) => {
+                                if(facetItem.name === facet) {
+                                    facetItem.values = _.merge(facetItem.values, _.compact(result));
+                                }
+                            })
+                        } else {
+                            facetData.push({ name: facet, values: _.compact(result) || [] });
+                        }
                     });
                     resolve(facetData);
                 }
@@ -598,6 +616,7 @@ export default class Content {
                 importedJobIds: jobIds,
             }, req));
         }).catch((err) => {
+            this.standardLog.error({ id: 'CONTENT_IMPORT_FAILED', message: 'Received error while importing a content', mid: req.headers['X-msgid'], error: err });
             res.status(500);
             res.send(Response.error(`api.content.import`, 400, err.errMessage || err.message, err.code));
         });
@@ -608,6 +627,7 @@ export default class Content {
                 jobIds,
             }, req));
         }).catch((err) => {
+            this.standardLog.error({ id: 'CONTENT_IMPORT_PAUSE_FAILED', message: 'Received error while pausing a content import', mid: req.headers['X-msgid'], error: err });
             res.status(500);
             res.send(Response.error(`api.content.import`, 400, err.message));
         });
@@ -618,6 +638,7 @@ export default class Content {
                 jobIds,
             }, req));
         }).catch((err) => {
+            this.standardLog.error({ id: 'CONTENT_IMPORT_RESUME_FAILED', message: 'Received error while resuming a content import', mid: req.headers['X-msgid'], error: err });
             res.status(500);
             res.send(Response.error(`api.content.import`, 400, err.message));
         });
@@ -628,6 +649,7 @@ export default class Content {
                 jobIds,
             }, req));
         }).catch((err) => {
+            this.standardLog.error({ id: 'CONTENT_IMPORT_CANCEL_FAILED', message: 'Received error while canceling content import process', mid: req.headers['X-msgid'], error: err });
             res.status(500);
             res.send(Response.error(`api.content.import`, 400, err.message));
         });
@@ -638,6 +660,7 @@ export default class Content {
                 jobIds,
             }, req));
         }).catch((err) => {
+            this.standardLog.error({ id: 'CONTENT_IMPORT_RETRY_FAILED', message: 'Received error while retrying content import process', mid: req.headers['X-msgid'], error: err });
             res.status(500);
             res.send(Response.error(`api.content.retry`, 400, err.message));
         });
@@ -755,7 +778,7 @@ export default class Content {
             contents = await this.changeContentStatus(offlineContents.docs, reqId, contents);
             return contents;
         } catch (err) {
-            logger.error(`ReqId = "${reqId}": Received  error err.message: ${err.message} ${err}`);
+            this.standardLog.error({id: 'CONTENT_DECORATE_FAILED', message: 'Received  error while decorating content', mid: reqId, error: err});
             return contents;
         }
     }
@@ -811,7 +834,7 @@ export default class Content {
                         ]
             },
         };
-        return await this.databaseSdk.find("content", dbFilter);
+        return this.databaseSdk.find("content", dbFilter);
     }
 
     // tslint:disable-next-line:member-ordering
@@ -823,7 +846,7 @@ export default class Content {
                         }
             },
         };
-        return await this.databaseSdk.find("content", dbFilter);
+        return this.databaseSdk.find("content", dbFilter);
     }
 
     // tslint:disable-next-line:member-ordering
@@ -844,9 +867,20 @@ export default class Content {
                     return content;
                 }
             });
-            return offlineContents;
         }
         return offlineContents;
+    }
+
+    private getFilters(filters) {
+        // Update BMG filter names
+        const bmgFilters =  _.intersection(Object.keys(filters), ["se_boards", "se_gradeLevels", "se_mediums", "se_subjects"]);
+        let keyMap = new Map([["se_boards", 'board'], ["se_gradeLevels", "gradeLevel"], ["se_mediums", "medium"], ["se_subjects", "subject"]]);
+        bmgFilters.forEach(newKey => {
+            const oldKey = keyMap.get(newKey);
+            delete Object.assign(filters, { [oldKey]: filters[newKey] })[newKey];
+        });
+
+        return filters;
     }
 
 }

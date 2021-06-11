@@ -11,10 +11,6 @@ import DatabaseSDK from "../../sdk/database";
 import HardDiskInfo from "../../utils/hardDiskInfo";
 import { IContentDownloadList, IDownloadMetadata } from "./IContentDownload";
 
-/*@ClassLogger({
-  logLevel: "debug",
-  logTime: true,
-})*/
 export class ContentDownloader implements ITaskExecuter {
   public static taskType = "DOWNLOAD";
   public static group = "CONTENT_MANAGER";
@@ -245,6 +241,7 @@ export class ContentDownloader implements ITaskExecuter {
         const hierarchy = await this.fileSDK.readJSON(path.join(contentPath, contentDetails.identifier, "hierarchy.json"));
         metaData = _.get(hierarchy, 'content') ? hierarchy.content : metaData;
       } catch(error) {
+        this.standardLog.error({ id: 'CONTENT_DOWNLOADER_JSON_READ_FAILED', message: `Failed to read JSON file`, error });
         metaData.children = this.createHierarchy(_.cloneDeep(_.get(manifestJson, "archive.items")), metaData);
       }
     }
@@ -264,6 +261,10 @@ export class ContentDownloader implements ITaskExecuter {
       metaData.visibility = "Parent";
     }
     await this.databaseSdk.upsert("content", metaData.identifier, metaData);
+
+    if (_.get(metaData, 'trackable')) {
+      this.contentDownloadData.metaData.trackable = metaData.trackable;
+    }
     contentDetails.step = "INDEX";
     this.observer.next(this.contentDownloadData);
   }

@@ -7,14 +7,9 @@ import { Inject } from "typescript-ioc";
 import DatabaseSDK from "../sdk/database/index";
 import Response from "../utils/response";
 import { StandardLogger } from '@project-sunbird/OpenRAP/services/standardLogger';
+
 const FAQS_DB = "faqs";
 
-import { ClassLogger } from "@project-sunbird/logger/decorator";
-
-/*@ClassLogger({
-  logLevel: "debug",
-  logTime: true,
-})*/
 export class Faqs {
 
   @Inject private databaseSdk: DatabaseSDK;
@@ -65,7 +60,7 @@ export class Faqs {
     if (!faqsData) { // Load from files. Not needed as we have inserted all faqs json on app start.
       logger.info(`Getting faqs from file system for language:`, language, `for ReqId: ${req.get("x-msgid")}`);
       faqsData = await this.fileSDK.readJSON(path.join(this.faqsBasePath, language + ".json")).catch((err) => {
-        logger.error(`Got error while reading Faq from file for language`, language, `for ReqId: ${req.get("x-msgid")}, error message `, err.message);
+        this.standardLog.error({ id: 'FAQ_FETCH_FAILED', message: `Got error while reading Faq from file for language ${language}`, error: err, mid: req.get("x-msgid") });
         return undefined;
       });
     }
@@ -77,7 +72,7 @@ export class Faqs {
           "content-type": "application/json",
       },
     };
-    return await HTTPService.get(`${process.env.FAQ_BLOB_URL}faq-${language}.json`, config).toPromise()
+    return HTTPService.get(`${process.env.FAQ_BLOB_URL}faq-${language}.json`, config).toPromise()
     .then((data: any) => {
       const faqsData = _.get(data, "data");
       if (faqsData) {
